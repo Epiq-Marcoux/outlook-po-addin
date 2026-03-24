@@ -11,8 +11,8 @@
   <DefaultLocale>fr-CA</DefaultLocale>
   <DisplayName DefaultValue="Modeles PO"/>
   <Description DefaultValue="Modeles de bons de commande avec merge PDF"/>
-  <IconUrl DefaultValue="https://res.cdn.office.net/files/fabric-cdn-prod_20230815.002/assets/brand-icons/product/png/outlook_48x1.png"/>
-  <HighResolutionIconUrl DefaultValue="https://res.cdn.office.net/files/fabric-cdn-prod_20230815.002/assets/brand-icons/product/png/outlook_96x1.png"/>
+  <IconUrl DefaultValue="https://epiq-marcoux.github.io/outlook-po-addin/icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://epiq-marcoux.github.io/outlook-po-addin/icon-128.png"/>
   <SupportUrl DefaultValue="https://epiq-marcoux.github.io/outlook-po-addin/"/>
 
   <AppDomains>

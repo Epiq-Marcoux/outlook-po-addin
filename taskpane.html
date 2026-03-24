@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modèles PO</title>
+<!-- PDF-lib for merge -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+  :root {
+    --blue: #0078d4;
+    --blue-dark: #005a9e;
+    --blue-light: #deecf9;
+    --green: #107c10;
+    --green-light: #dff6dd;
+    --orange: #d83b01;
+    --grey-bg: #f3f2f1;
+    --grey-border: #d2d0ce;
+    --text: #323130;
+    --text-light: #605e5c;
+    --radius: 6px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; color: var(--text); background: #fff; }
+
+  /* TABS */
+  .tabs { display: flex; border-bottom: 2px solid var(--grey-border); background: var(--grey-bg); }
+  .tab { padding: 10px 18px; cursor: pointer; border: none; background: none; font-size: 13px; color: var(--text-light); font-family: inherit; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
+  .tab:hover { color: var(--blue); background: #e8e8e8; }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; background: #fff; }
+
+  /* PANELS */
+  .panel { display: none; padding: 14px; }
+  .panel.active { display: block; }
+
+  /* TEMPLATE CARDS */
+  .template-grid { display: grid; gap: 10px; }
+  .tpl-card { border: 1.5px solid var(--grey-border); border-radius: var(--radius); padding: 12px; cursor: pointer; transition: all .15s; }
+  .tpl-card:hover { border-color: var(--blue); background: var(--blue-light); }
+  .tpl-card.selected { border-color: var(--blue); background: var(--blue-light); }
+  .tpl-card .tpl-lang { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--blue); margin-bottom: 3px; }
+  .tpl-card .tpl-name { font-weight: 600; font-size: 13px; }
+  .tpl-card .tpl-desc { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+  .badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 6px; font-weight: 600; }
+  .badge-merge { background: #fff4ce; color: #7d5d00; border: 1px solid #f0d060; }
+
+  /* FORM */
+  label { display: block; font-weight: 600; margin-bottom: 3px; margin-top: 10px; font-size: 12px; }
+  label:first-child { margin-top: 0; }
+  input, select, textarea { width: 100%; padding: 6px 8px; border: 1px solid var(--grey-border); border-radius: var(--radius); font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: border .15s; }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0,120,212,.15); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius); border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600; transition: all .15s; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-primary:disabled { background: #a0c0e0; cursor: not-allowed; }
+  .btn-secondary { background: #fff; color: var(--blue); border: 1.5px solid var(--blue); }
+  .btn-secondary:hover { background: var(--blue-light); }
+  .btn-danger { background: #fff; color: var(--orange); border: 1.5px solid var(--orange); }
+  .btn-danger:hover { background: #fdf0ec; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+  /* FILE DROP */
+  .file-drop { border: 2px dashed var(--grey-border); border-radius: var(--radius); padding: 14px; text-align: center; cursor: pointer; transition: all .15s; color: var(--text-light); }
+  .file-drop:hover, .file-drop.over { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+  .file-drop input[type=file] { display: none; }
+  .file-drop .icon { font-size: 22px; }
+  .file-info { display: flex; align-items: center; justify-content: space-between; background: var(--green-light); border: 1px solid #a0d8a0; border-radius: var(--radius); padding: 7px 10px; margin-top: 6px; }
+  .file-info .fname { font-weight: 600; font-size: 12px; color: var(--green); }
+  .file-info .fsize { font-size: 11px; color: var(--text-light); }
+
+  /* MERGE ORDER */
+  .merge-order { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  .merge-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1.5px solid; cursor: pointer; }
+  .merge-pill.tc { background: #fff4ce; color: #7d5d00; border-color: #f0d060; }
+  .merge-pill.po { background: #e1f0ff; color: #004e99; border-color: #90c0f0; }
+  .merge-pill.arrow { background: none; border: none; color: var(--text-light); font-size: 16px; cursor: default; }
+  .merge-hint { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+
+  /* PREVIEW */
+  .preview-box { background: var(--grey-bg); border: 1px solid var(--grey-border); border-radius: var(--radius); padding: 12px; margin-top: 10px; font-size: 12px; line-height: 1.6; }
+  .preview-field { margin-bottom: 6px; }
+  .preview-label { font-weight: 700; color: var(--text-light); font-size: 11px; text-transform: uppercase; }
+  .preview-val { color: var(--text); }
+  pre.preview-body { white-space: pre-wrap; font-family: inherit; }
+
+  /* STATUS */
+  .status { padding: 8px 12px; border-radius: var(--radius); font-size: 12px; margin-top: 10px; display: none; }
+  .status.ok { background: var(--green-light); color: var(--green); border: 1px solid #a0d8a0; }
+  .status.err { background: #fdf0ec; color: var(--orange); border: 1px solid #f0c0a0; }
+  .status.info { background: var(--blue-light); color: var(--blue-dark); border: 1px solid #b0d0f0; }
+
+  /* PROGRESS */
+  .progress-bar { height: 4px; border-radius: 2px; background: var(--grey-border); margin-top: 8px; overflow: hidden; display: none; }
+  .progress-fill { height: 100%; width: 0; background: var(--blue); border-radius: 2px; transition: width .3s; }
+
+  /* SETTINGS */
+  .settings-section { margin-bottom: 18px; }
+  .settings-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-light); margin-bottom: 8px; border-bottom: 1px solid var(--grey-border); padding-bottom: 4px; }
+
+  hr { border: none; border-top: 1px solid var(--grey-border); margin: 12px 0; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .step-num { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 11px; font-weight: 700; margin-right: 6px; }
+  .section-title { font-weight: 700; font-size: 13px; margin-bottom: 8px; display: flex; align-items: center; }
+  .tooltip { position: relative; display: inline-block; }
+  .tooltip .tip { visibility: hidden; background: #333; color: #fff; font-size: 11px; border-radius: 4px; padding: 4px 8px; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 10; }
+  .tooltip:hover .tip { visibility: visible; }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('compose')">✉️ Composer</button>
+  <button class="tab" onclick="switchTab('merge')">📎 Merge PDF</button>
+  <button class="tab" onclick="switchTab('settings')">⚙️ Modèles</button>
+</div>
+
+<!-- ===================== TAB: COMPOSE ===================== -->
+<div id="tab-compose" class="panel active">
+
+  <div class="section-title"><span class="step-num">1</span> Choisir un modèle</div>
+  <div class="template-grid" id="tpl-grid">
+    <!-- populated by JS -->
+  </div>
+
+  <div id="fields-section" style="display:none">
+    <hr>
+    <div class="section-title"><span class="step-num">2</span> Remplir les champs</div>
+    <div id="dynamic-fields"></div>
+
+    <hr>
+    <div class="section-title"><span class="step-num">3</span> Prévisualiser</div>
+    <div class="preview-box" id="preview-box" style="display:none">
+      <div class="preview-field"><div class="preview-label">À (To)</div><div class="preview-val" id="prev-to">—</div></div>
+      <div class="preview-field"><div class="preview-label">Objet (Subject)</div><div class="preview-val" id="prev-subj">—</div></div>
+      <div class="preview-field"><div class="preview-label">Corps (Body)</div><pre class="preview-body preview-val" id="prev-body">—</pre></div>
+    </div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:6px" onclick="refreshPreview()">🔄 Actualiser l'aperçu</button>
+
+    <hr>
+    <div id="merge-section-compose" style="display:none">
+      <div class="section-title"><span class="step-num">4</span> PDF à joindre (optionnel)</div>
+      <p style="font-size:11px;color:var(--text-light);margin-bottom:8px">Uploadez votre PO — il sera fusionné avec les T&amp;C selon l'ordre choisi.</p>
+      <div class="file-drop" id="drop-compose" onclick="document.getElementById('file-compose').click()" ondragover="dragOver(event,'drop-compose')" ondragleave="dragLeave('drop-compose')" ondrop="dropFile(event,'compose')">
+        <input type="file" id="file-compose" accept=".pdf" onchange="fileSelected(this,'compose')">
+        <div class="icon">📄</div>
+        <div>Cliquer ou glisser votre PO (PDF)</div>
+      </div>
+      <div id="file-compose-info" style="display:none"></div>
+      <div id="merge-order-compose" style="display:none">
+        <div class="merge-order" id="order-compose">
+          <span class="merge-pill tc" id="pill-tc-compose">📋 T&amp;C</span>
+          <span class="merge-pill arrow">→</span>
+          <span class="merge-pill po" id="pill-po-compose">📄 PO</span>
+        </div>
+        <div class="merge-hint">💡 Cliquez sur les pilules pour inverser l'ordre</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-apply" onclick="applyToOutlook()">✅ Appliquer dans Outlook</button>
+      <button class="btn btn-secondary" onclick="resetForm()">🔄 Réinitialiser</button>
+    </div>
+    <div class="progress-bar" id="prog-compose"><div class="progress-fill" id="prog-fill-compose"></div></div>
+    <div class="status" id="status-compose"></div>
+  </div>
+</div>
+
+<!-- ===================== TAB: MERGE PDF ===================== -->
+<div id="tab-merge" class="panel">
+  <p style="font-size:12px;color:var(--text-light);margin-bottom:12px">Fusionnez deux PDF indépendamment du modèle de courriel.</p>
+
+  <label>📋 PDF 1 — Termes &amp; Conditions</label>
+  <div class="file-drop" id="drop-tc" onclick="document.getElementById('file-tc').click()" ondragover="dragOver(event,'drop-tc')" ondragleave="dragLeave('drop-tc')" ondrop="dropFile(event,'tc')">
+    <input type="file" id="file-tc" accept=".pdf" onchange="fileSelected(this,'tc')">
+    <div class="icon">📋</div>
+    <div>T&amp;C PDF</div>
+  </div>
+  <div id="file-tc-info"></div>
+
+  <label style="margin-top:12px">📄 PDF 2 — Bon de commande (PO)</label>
+  <div class="file-drop" id="drop-po" onclick="document.getElementById('file-po').click()" ondragover="dragOver(event,'drop-po')" ondragleave="dragLeave('drop-po')" ondrop="dropFile(event,'po')">
+    <input type="file" id="file-po" accept=".pdf" onchange="fileSelected(this,'po')">
+    <div class="icon">📄</div>
+    <div>PO PDF</div>
+  </div>
+  <div id="file-po-info"></div>
+
+  <label style="margin-top:12px">Ordre de fusion</label>
+  <div class="merge-order" id="order-merge">
+    <span class="merge-pill tc" id="pill-tc-merge">📋 T&amp;C</span>
+    <span class="merge-pill arrow">→</span>
+    <span class="merge-pill po" id="pill-po-merge">📄 PO</span>
+  </div>
+  <div class="merge-hint">💡 Cliquez sur les pilules pour inverser l'ordre</div>
+
+  <label style="margin-top:12px">Nom du fichier de sortie</label>
+  <input type="text" id="merge-filename" value="PO_avec_TC.pdf" placeholder="nom_fichier.pdf">
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btn-merge-standalone" onclick="mergeStandalone()">🔀 Fusionner &amp; Télécharger</button>
+  </div>
+  <div class="progress-bar" id="prog-merge"><div class="progress-fill" id="prog-fill-merge"></div></div>
+  <div class="status" id="status-merge"></div>
+</div>
+
+<!-- ===================== TAB: SETTINGS ===================== -->
+<div id="tab-settings" class="panel">
+  <div class="settings-section">
+    <h3>Modèles disponibles</h3>
+    <div id="settings-tpl-list"></div>
+  </div>
+  <div class="settings-section">
+    <h3>Fichier T&amp;C par défaut</h3>
+    <p style="font-size:11px;color:var(--text-light);margin-bottom:8px">Uploadez votre PDF Termes &amp; Conditions fixe (utilisé automatiquement dans le merge).</p>
+    <div class="file-drop" id="drop-tc-default" onclick="document.getElementById('file-tc-default').click()" ondragover="dragOver(event,'drop-tc-default')" ondragleave="dragLeave('drop-tc-default')" ondrop="dropFile(event,'tc-default')">
+      <input type="file" id="file-tc-default" accept=".pdf" onchange="fileSelected(this,'tc-default')">
+      <div class="icon">📋</div>
+      <div>T&amp;C PDF (fixe)</div>
+    </div>
+    <div id="file-tc-default-info"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  selectedTpl: null,
+  files: { tc: null, po: null, 'tc-default': null, compose: null },
+  mergeOrder: { merge: ['tc','po'], compose: ['tc','po'] },
+  tcDefaultBytes: null,
+};
+
+// ============================================================
+// TEMPLATES
+// ============================================================
+const TEMPLATES = [
+  {
+    id: 'fr',
+    lang: 'Français',
+    name: 'Bon de commande — Fournisseur',
+    desc: 'Corps entièrement en français',
+    hasMerge: true,
+    subject: 'Bon de commande #{PO_NUMBER} — {COMPANY}',
+    body: `Bonjour {SUPPLIER_NAME},
+
+Veuillez trouver ci-joint notre bon de commande #{PO_NUMBER} daté du {DATE}.
+
+Ce document inclut nos termes et conditions générales d'achat.
+
+Nous vous prions de bien vouloir accuser réception de ce courriel et de confirmer votre acceptation des conditions mentionnées.
+
+Pour toute question, n'hésitez pas à nous contacter.
+
+Cordialement,`
+  },
+  {
+    id: 'en',
+    lang: 'English',
+    name: 'Purchase Order — Supplier',
+    desc: 'Body entirely in English',
+    hasMerge: true,
+    subject: 'Purchase Order #{PO_NUMBER} — {COMPANY}',
+    body: `Dear {SUPPLIER_NAME},
+
+Please find attached our Purchase Order #{PO_NUMBER} dated {DATE}.
+
+This document includes our general terms and conditions of purchase.
+
+Kindly acknowledge receipt of this email and confirm your acceptance of the stated conditions.
+
+Should you have any questions, please do not hesitate to contact us.
+
+Best regards,`
+  },
+  {
+    id: 'bilingual',
+    lang: 'Bilingue / Bilingual',
+    name: 'Bon de commande / Purchase Order',
+    desc: 'Corps en français ET en anglais',
+    hasMerge: true,
+    subject: 'Bon de commande / Purchase Order #{PO_NUMBER} — {COMPANY}',
+    body: `Bonjour {SUPPLIER_NAME} / Dear {SUPPLIER_NAME},
+
+--- FRANÇAIS ---
+Veuillez trouver ci-joint notre bon de commande #{PO_NUMBER} daté du {DATE}.
+Ce document inclut nos termes et conditions générales d'achat.
+Nous vous prions d'accuser réception et de confirmer votre acceptation des conditions.
+
+--- ENGLISH ---
+Please find attached our Purchase Order #{PO_NUMBER} dated {DATE}.
+This document includes our general terms and conditions of purchase.
+Kindly acknowledge receipt and confirm your acceptance of the stated conditions.
+
+Cordialement / Best regards,`
+  }
+];
+
+const FIELDS = [
+  { id: 'SUPPLIER_NAME', label: 'Nom du fournisseur / Supplier Name', placeholder: 'Acme Inc.' },
+  { id: 'PO_NUMBER', label: '# Bon de commande / PO Number', placeholder: 'PO-2026-0042' },
+  { id: 'DATE', label: 'Date', placeholder: new Date().toLocaleDateString('fr-CA') },
+  { id: 'SUPPLIER_EMAIL', label: 'Courriel fournisseur / To', placeholder: 'supplier@example.com', isTo: true },
+
+];
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  renderTemplateCards();
+  renderSettingsTemplates();
+  initMergePills('merge');
+}
+
+function renderTemplateCards() {
+  const grid = document.getElementById('tpl-grid');
+  grid.innerHTML = TEMPLATES.map(t => `
+    <div class="tpl-card" id="card-${t.id}" onclick="selectTemplate('${t.id}')">
+      <div class="tpl-lang">${t.lang}${t.hasMerge ? '<span class="badge badge-merge">🔀 Merge PDF</span>' : ''}</div>
+      <div class="tpl-name">${t.name}</div>
+      <div class="tpl-desc">${t.desc}</div>
+    </div>
+  `).join('');
+}
+
+function renderSettingsTemplates() {
+  const list = document.getElementById('settings-tpl-list');
+  list.innerHTML = TEMPLATES.map(t => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--grey-border)">
+      <div>
+        <span style="font-weight:700;font-size:12px">${t.name}</span>
+        <span style="font-size:11px;color:var(--text-light);margin-left:6px">[${t.lang}]</span>
+      </div>
+      <span style="font-size:11px;color:var(--text-light)">${t.hasMerge ? '🔀 Merge' : ''}</span>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// TEMPLATE SELECTION
+// ============================================================
+function selectTemplate(id) {
+  state.selectedTpl = TEMPLATES.find(t => t.id === id);
+  document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('card-'+id).classList.add('selected');
+
+  renderDynamicFields();
+  document.getElementById('fields-section').style.display = 'block';
+
+  const mergeSection = document.getElementById('merge-section-compose');
+  mergeSection.style.display = state.selectedTpl.hasMerge ? 'block' : 'none';
+
+  if (state.selectedTpl.hasMerge) initMergePills('compose');
+  refreshPreview();
+}
+
+function renderDynamicFields() {
+  const container = document.getElementById('dynamic-fields');
+  const savedVals = {};
+  container.querySelectorAll('input,textarea').forEach(el => { if(el.id) savedVals[el.id] = el.value; });
+
+  container.innerHTML = FIELDS.map(f => `
+    <div>
+      <label for="f_${f.id}">${f.label}</label>
+      <input type="text" id="f_${f.id}" placeholder="${f.placeholder}" value="${savedVals['f_'+f.id]||''}" oninput="refreshPreview()">
+    </div>
+  `).join('');
+
+  // set today's date
+  const dateField = document.getElementById('f_DATE');
+  if (dateField && !dateField.value) dateField.value = new Date().toLocaleDateString('fr-CA');
+}
+
+function getFieldValues() {
+  const vals = {};
+  FIELDS.forEach(f => {
+    const el = document.getElementById('f_'+f.id);
+    vals[f.id] = el ? el.value.trim() : '';
+  });
+  return vals;
+}
+
+function fillTemplate(str, vals) {
+  return str.replace(/\{(\w+)\}/g, (_, k) => vals[k] || `{${k}}`);
+}
+
+function refreshPreview() {
+  if (!state.selectedTpl) return;
+  const vals = getFieldValues();
+  document.getElementById('prev-to').textContent = vals['SUPPLIER_EMAIL'] || '—';
+  document.getElementById('prev-subj').textContent = fillTemplate(state.selectedTpl.subject, vals);
+  document.getElementById('prev-body').textContent = fillTemplate(state.selectedTpl.body, vals);
+  document.getElementById('preview-box').style.display = 'block';
+}
+
+// ============================================================
+// FILE HANDLING
+// ============================================================
+function dragOver(e, zoneId) { e.preventDefault(); document.getElementById(zoneId).classList.add('over'); }
+function dragLeave(zoneId) { document.getElementById(zoneId).classList.remove('over'); }
+
+function dropFile(e, key) {
+  e.preventDefault();
+  const zoneId = 'drop-' + (key==='tc'?'tc': key==='po'?'po': key==='tc-default'?'tc-default':'compose');
+  dragLeave(zoneId);
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') processFile(file, key);
+}
+
+function fileSelected(input, key) {
+  if (input.files[0]) processFile(input.files[0], key);
+}
+
+function processFile(file, key) {
+  state.files[key] = file;
+  const infoId = 'file-' + key + '-info';
+  const infoEl = document.getElementById(infoId);
+  if (!infoEl) return;
+
+  const kb = (file.size/1024).toFixed(1);
+  infoEl.style.display = 'block';
+  infoEl.innerHTML = `<div class="file-info">
+    <div><div class="fname">✅ ${escHtml(file.name)}</div><div class="fsize">${kb} KB</div></div>
+    <button class="btn btn-danger btn-sm" onclick="removeFile('${key}')">✕</button>
+  </div>`;
+
+  if (key === 'tc-default') {
+    // read as arraybuffer for default TC
+    const reader = new FileReader();
+    reader.onload = e => { state.tcDefaultBytes = e.target.result; };
+    reader.readAsArrayBuffer(file);
+  }
+
+  if (key === 'compose') {
+    document.getElementById('merge-order-compose').style.display = 'block';
+  }
+}
+
+function removeFile(key) {
+  state.files[key] = null;
+  if (key === 'tc-default') state.tcDefaultBytes = null;
+  const infoEl = document.getElementById('file-'+key+'-info');
+  if (infoEl) { infoEl.innerHTML = ''; infoEl.style.display = 'none'; }
+  if (key === 'compose') document.getElementById('merge-order-compose').style.display = 'none';
+  // reset file input
+  const inputMap = { tc:'file-tc', po:'file-po', 'tc-default':'file-tc-default', compose:'file-compose' };
+  const inputEl = document.getElementById(inputMap[key]);
+  if (inputEl) inputEl.value = '';
+}
+
+// ============================================================
+// MERGE ORDER PILLS
+// ============================================================
+function initMergePills(ctx) {
+  state.mergeOrder[ctx] = ['tc','po'];
+  updatePillsUI(ctx);
+  const tc = document.getElementById('pill-tc-'+ctx);
+  const po = document.getElementById('pill-po-'+ctx);
+  if (tc) tc.onclick = () => toggleOrder(ctx);
+  if (po) po.onclick = () => toggleOrder(ctx);
+}
+
+function toggleOrder(ctx) {
+  state.mergeOrder[ctx] = state.mergeOrder[ctx][0]==='tc' ? ['po','tc'] : ['tc','po'];
+  updatePillsUI(ctx);
+}
+
+function updatePillsUI(ctx) {
+  const order = state.mergeOrder[ctx];
+  const container = document.getElementById('order-'+ctx);
+  if (!container) return;
+  // reorder DOM pills
+  const tc = document.getElementById('pill-tc-'+ctx);
+  const po = document.getElementById('pill-po-'+ctx);
+  const arrow = container.querySelector('.arrow');
+  if (!tc || !po) return;
+  container.innerHTML = '';
+  const first = order[0]==='tc' ? tc : po;
+  const second = order[0]==='tc' ? po : tc;
+  container.appendChild(first);
+  const arr = document.createElement('span');
+  arr.className='merge-pill arrow'; arr.textContent='→';
+  container.appendChild(arr);
+  container.appendChild(second);
+  // rebind clicks
+  tc.onclick = () => toggleOrder(ctx);
+  po.onclick = () => toggleOrder(ctx);
+}
+
+// ============================================================
+// MERGE PDF (pdf-lib)
+// ============================================================
+async function mergePDFs(pdf1Bytes, pdf2Bytes) {
+  const { PDFDocument } = PDFLib;
+  const doc1 = await PDFDocument.load(pdf1Bytes);
+  const doc2 = await PDFDocument.load(pdf2Bytes);
+  const merged = await PDFDocument.create();
+  const pages1 = await merged.copyPages(doc1, doc1.getPageIndices());
+  pages1.forEach(p => merged.addPage(p));
+  const pages2 = await merged.copyPages(doc2, doc2.getPageIndices());
+  pages2.forEach(p => merged.addPage(p));
+  return await merged.save();
+}
+
+async function readFileAsArrayBuffer(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsArrayBuffer(file);
+  });
+}
+
+// ============================================================
+// APPLY TO OUTLOOK
+// ============================================================
+async function applyToOutlook() {
+  if (!state.selectedTpl) return;
+  const vals = getFieldValues();
+  const subject = fillTemplate(state.selectedTpl.subject, vals);
+  const body = fillTemplate(state.selectedTpl.body, vals);
+  const to = vals['SUPPLIER_EMAIL'];
+
+  const btn = document.getElementById('btn-apply');
+  btn.disabled = true;
+  showStatus('compose','info','⏳ Traitement en cours...');
+  showProgress('compose', 10);
+
+  // Merge PDF if needed
+  let mergedPdfUrl = null;
+  let mergedFilename = `PO_TC_${vals['PO_NUMBER']||'merged'}.pdf`;
+
+  if (state.selectedTpl.hasMerge && state.files['compose']) {
+    try {
+      const tcBytes = state.tcDefaultBytes || null;
+      const poBytes = await readFileAsArrayBuffer(state.files['compose']);
+      showProgress('compose', 40);
+
+      if (tcBytes) {
+        const order = state.mergeOrder['compose'];
+        const first = order[0]==='tc' ? tcBytes : poBytes;
+        const second = order[0]==='tc' ? poBytes : tcBytes;
+        const merged = await mergePDFs(first, second);
+        showProgress('compose', 80);
+        const blob = new Blob([merged], {type:'application/pdf'});
+        mergedPdfUrl = URL.createObjectURL(blob);
+      } else {
+        // no default TC — just attach PO
+        const blob = new Blob([poBytes], {type:'application/pdf'});
+        mergedPdfUrl = URL.createObjectURL(blob);
+        mergedFilename = state.files['compose'].name;
+      }
+    } catch(e) {
+      showStatus('compose','err','❌ Erreur lors de la fusion PDF: '+e.message);
+      btn.disabled = false;
+      hideProgress('compose');
+      return;
+    }
+  }
+
+  showProgress('compose', 95);
+
+  // Try Office JS
+  if (typeof Office !== 'undefined' && Office.context && Office.context.mailbox) {
+    try {
+      const item = Office.context.mailbox.item;
+      await new Promise((res,rej) => item.subject.setAsync(subject, r => r.status==='succeeded'?res():rej(r.error)));
+      await new Promise((res,rej) => item.body.setAsync(body, {coercionType: Office.CoercionType.Text}, r => r.status==='succeeded'?res():rej(r.error)));
+      if (to) await new Promise((res,rej) => item.to.addAsync([{emailAddress:to}], r => r.status==='succeeded'?res():rej(r.error)));
+
+      if (mergedPdfUrl) {
+        const resp = await fetch(mergedPdfUrl);
+        const ab = await resp.arrayBuffer();
+        const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+        await new Promise((res,rej) => item.addFileAttachmentFromBase64Async(b64, mergedFilename, {}, r => r.status==='succeeded'?res():rej(r.error)));
+      }
+      showProgress('compose', 100);
+      showStatus('compose','ok','✅ Modèle appliqué dans Outlook !');
+    } catch(e) {
+      showStatus('compose','err','❌ Erreur Office JS: '+e.message);
+    }
+  } else {
+    // DEMO MODE — generate mailto + download
+    showProgress('compose', 100);
+    const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const demoDiv = document.createElement('div');
+    demoDiv.style.cssText = 'margin-top:10px;padding:10px;background:var(--blue-light);border-radius:6px;font-size:12px;';
+    demoDiv.innerHTML = `<b>🖥️ Mode démo</b> (Office JS non disponible hors Outlook)<br>
+      <a href="${mailto}" style="color:var(--blue);font-weight:600">📧 Ouvrir dans le client mail</a>
+      ${mergedPdfUrl ? `&nbsp;&nbsp;<a href="${mergedPdfUrl}" download="${mergedFilename}" style="color:var(--blue);font-weight:600">⬇️ Télécharger PDF fusionné</a>` : ''}
+      <br><small>Objet : <b>${escHtml(subject)}</b></small>`;
+    const existing = document.getElementById('demo-output');
+    if (existing) existing.remove();
+    demoDiv.id = 'demo-output';
+    document.getElementById('tab-compose').appendChild(demoDiv);
+    showStatus('compose','ok','✅ Aperçu généré (mode démo).');
+  }
+
+  btn.disabled = false;
+  hideProgress('compose');
+}
+
+// ============================================================
+// STANDALONE MERGE
+// ============================================================
+async function mergeStandalone() {
+  const tc = state.files['tc'];
+  const po = state.files['po'];
+  if (!tc || !po) { showStatus('merge','err','⚠️ Veuillez charger les deux fichiers PDF.'); return; }
+
+  const btn = document.getElementById('btn-merge-standalone');
+  btn.disabled = true;
+  showStatus('merge','info','⏳ Fusion en cours...');
+  showProgress('merge', 20);
+
+  try {
+    const order = state.mergeOrder['merge'];
+    const tcBytes = await readFileAsArrayBuffer(tc);
+    const poBytes = await readFileAsArrayBuffer(po);
+    showProgress('merge', 50);
+    const first = order[0]==='tc' ? tcBytes : poBytes;
+    const second = order[0]==='tc' ? poBytes : tcBytes;
+    const merged = await mergePDFs(first, second);
+    showProgress('merge', 90);
+
+    const filename = document.getElementById('merge-filename').value || 'merged.pdf';
+    const blob = new Blob([merged], {type:'application/pdf'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    showProgress('merge', 100);
+    showStatus('merge','ok','✅ PDF fusionné téléchargé : '+filename);
+  } catch(e) {
+    showStatus('merge','err','❌ Erreur: '+e.message);
+  }
+  btn.disabled = false;
+  hideProgress('merge');
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function showStatus(ctx, type, msg) {
+  const el = document.getElementById('status-'+ctx);
+  el.className = 'status '+type;
+  el.textContent = msg;
+  el.style.display = 'block';
+  if (type==='ok') setTimeout(() => { el.style.display='none'; }, 5000);
+}
+
+function showProgress(ctx, pct) {
+  const bar = document.getElementById('prog-'+ctx);
+  const fill = document.getElementById('prog-fill-'+ctx);
+  bar.style.display = 'block';
+  fill.style.width = pct+'%';
+}
+function hideProgress(ctx) {
+  setTimeout(() => {
+    const bar = document.getElementById('prog-'+ctx);
+    if (bar) bar.style.display = 'none';
+  }, 800);
+}
+
+function resetForm() {
+  state.selectedTpl = null;
+  document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('fields-section').style.display = 'none';
+  document.getElementById('status-compose').style.display = 'none';
+  const demo = document.getElementById('demo-output');
+  if (demo) demo.remove();
+  removeFile('compose');
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+init();
+</script>
+</body>
+</html>
